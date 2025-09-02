@@ -1,0 +1,6 @@
+@IpcServer_HostAddress = http://localhost:5010
+
+GET {{IpcServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
