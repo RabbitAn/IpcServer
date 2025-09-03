@@ -1,5 +1,8 @@
 using System.Net.WebSockets;
 using System.Text;
+using IpcServer.Domain.Entities;
+using IpcServer.Domain.Interfaces;
+using IpcServer.WorkFlow.Workflows;
 using Newtonsoft.Json;
 
 namespace IpcServer;
@@ -9,15 +12,16 @@ public class HostedService:BackgroundService
     private readonly WebSocketConnectionManager _webSocketConnection;
     private readonly ILogger<HostedService> _logger;
 
+
     public HostedService(WebSocketConnectionManager webSocketConnection,ILogger<HostedService> logger)
     {
         _webSocketConnection = webSocketConnection;
         _logger = logger;
+
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-       
-
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             //推送的消息

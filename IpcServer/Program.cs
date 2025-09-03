@@ -5,6 +5,8 @@ using NLog.Web;
 using IpcServer.Domain;
 using IpcServer.Domain.Interfaces;
 using IpcServer.Infrastructure;
+using IpcServer.WorkFlow.Devices;
+using IpcServer.WorkFlow.Workflows;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +27,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<SqlSugarDbContext>(); // 单例 DbContext
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 Console.WriteLine("连接字符串: " + builder.Configuration.GetConnectionString("Default"));
+//添加DI
+builder.Services.AddScoped<LeakTestAction>();
+builder.Services.AddScoped<ScanAction>();
+builder.Services.AddScoped<TightenAction>();
+builder.Services.AddScoped<IRecipeExecutor, RecipeExecutor>();
+
+
 
 // 注册控制器
 builder.Services.AddControllers();
@@ -92,7 +101,7 @@ app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connection
         Console.WriteLine($"收到客户端消息: {message}");
 
         // 回显消息
-        await socket.SendAsync(Encoding.UTF8.GetBytes($"Echo: {message}"), WebSocketMessageType.Text, true, CancellationToken.None);
+      //  await socket.SendAsync(Encoding.UTF8.GetBytes($"Echo: {message}"), WebSocketMessageType.Text, true, CancellationToken.None);
 
         // 继续接收
         result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="WorkflowCore" Version="3.15.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Steps\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\IpcServer.Domain\IpcServer.Domain.csproj" />
+    </ItemGroup>
+
+</Project>

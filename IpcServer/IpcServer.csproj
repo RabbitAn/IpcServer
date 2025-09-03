@@ -17,6 +17,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\IpcServer.Infrastructure\IpcServer.Infrastructure.csproj" />
+      <ProjectReference Include="..\IpcServer.WorkFlow\IpcServer.WorkFlow.csproj" />
     </ItemGroup>
 
 </Project>
