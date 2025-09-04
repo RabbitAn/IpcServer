@@ -19,12 +19,14 @@ public class ScanAction : IDeviceAction
             _logger.LogInformation($"[扫码] 工位:开始执行扫码逻辑 {station.StationName}, 条码规则: {station.BarcodeRule}");
             //模拟校验
             var result = "OK";
+            //模拟延时
+          
             _logger.LogInformation($"[扫码] 工位:校验结果{result}");
             return result;
         }
         catch (Exception e)
         {
-            _logger.LogInformation($"[扫码] 工位:出现异常，异常详情：{e.Message}");
+            _logger.LogError($"[扫码] 工位:出现异常，异常详情：{e.Message}");
             return "NG";
         }
     }

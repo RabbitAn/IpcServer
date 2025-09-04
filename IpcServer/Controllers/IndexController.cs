@@ -22,7 +22,7 @@ public class IndexController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> Get()
     {
-        var result = await _repository.FindAsync(x => x.StationCode == "OP010");
+        var result = await _repository.FindAsync(x => x.StationCode == "OP050");
        
    
         _recipeExecutor.ExecuteRecipe(result.ToList());

@@ -1,3 +1,3 @@
 namespace IpcServer;
 
-public record class StepDetail(string? stepNo, string stepName, string stepStatus, string? stepTime);
+public record class StepDetail(int stepNo, string stepName, string stepType,  string? stepTime);

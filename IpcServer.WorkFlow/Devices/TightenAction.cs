@@ -19,12 +19,13 @@ public class TightenAction : IDeviceAction
             _logger.LogInformation(
                 $"[拧紧] 工位: 开始执行拧紧程序，{station.StationName}, 数量: {station.Quantity}, 扭矩范围: {station.TorqueRange}, 角度范围: {station.AngleRange}");
             var res = "OK";
+            Thread.Sleep(3000);
             _logger.LogInformation($"[拧紧] 工位: 结束拧紧程序，拧紧结果{res}");
             return res;
         }
         catch (Exception e)
         {
-            _logger.LogInformation($"[拧紧] 工位:出现异常，异常详情：{e.Message}");
+            _logger.LogError($"[拧紧] 工位:出现异常，异常详情：{e.Message}");
             return "NG";
         }
     }

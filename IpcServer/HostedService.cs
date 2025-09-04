@@ -1,56 +1,89 @@
 using System.Net.WebSockets;
 using System.Text;
+using IpcServer;
+using IpcServer.Domain;
 using IpcServer.Domain.Entities;
 using IpcServer.Domain.Interfaces;
 using IpcServer.WorkFlow.Workflows;
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 
-namespace IpcServer;
-
-public class HostedService:BackgroundService
+public class HostedService : BackgroundService
 {
-    private readonly WebSocketConnectionManager _webSocketConnection;
+    private readonly IHubContext<WorkHub> _hubContext;
     private readonly ILogger<HostedService> _logger;
-
-
-    public HostedService(WebSocketConnectionManager webSocketConnection,ILogger<HostedService> logger)
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly List<ErrorInfo> _errorInfos;
+    public HostedService(
+        IHubContext<WorkHub> hubContext,
+        ILogger<HostedService> logger,
+        IServiceScopeFactory scopeFactory)
     {
-        _webSocketConnection = webSocketConnection;
+        _hubContext = hubContext;
         _logger = logger;
-
+        _scopeFactory = scopeFactory;
+        _errorInfos = new List<ErrorInfo>()
+        {
+            new ErrorInfo(){Level = Level.warning,time = DateTime.Now,description = "hahhaha"},
+            new ErrorInfo(){Level = Level.info ,time = DateTime.Now,description = "test"}, 
+        };
     }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        
-        while (!stoppingToken.IsCancellationRequested)
+        List<StepDetail> steps=new ();
+        using (var scope = _scopeFactory.CreateScope())
         {
-            //推送的消息
-            var payload = new
+            var repository = scope.ServiceProvider.GetRequiredService<IRepository<StationRecipe>>();
+            var recipeExecutor = scope.ServiceProvider.GetRequiredService<IRecipeExecutor>();
+
+            var stationRecipes = await repository.FindAsync(x => x.StationCode == "OP050");
+            recipeExecutor.ExecuteRecipe(stationRecipes.ToList());
+            foreach (var stationRecipe in stationRecipes)
             {
-                time = DateTime.Now.ToString("HH:mm:ss"),
-                type = "heartbeat",
-                message = "服务器推送"
-            };
-            var message = JsonConvert.SerializeObject(payload);
-            var buffer = Encoding.UTF8.GetBytes(message);
-            // 遍历所有连接并推送
-            foreach (var socket in _webSocketConnection.GetAllSockets())
-            {
-                if (socket.State == WebSocketState.Open)
-                {
-                    try
-                    {
-                        await socket.SendAsync(buffer, WebSocketMessageType.Text, true, stoppingToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogInformation(ex, "推送消息失败");
-                    }
-                }
+                steps.Add(new StepDetail(stationRecipe.ProcessStep,stationRecipe.ProcessName,stationRecipe.OperationType,"30"));
             }
-            // 每 5 秒推送一次
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
 
+        var currentStep = 1;
+        while (!stoppingToken.IsCancellationRequested)
+        {
+           
+            await _hubContext.Clients.All.SendAsync("heartbeat", new
+            {
+                time = DateTime.Now.ToString("HH:mm:ss"),
+                currentStation = "OP050"
+            });
+
+            await _hubContext.Clients.All.SendAsync("workStepUpdate", new
+            {
+                steps,
+                time = DateTime.Now
+            });
+            
+            
+            await _hubContext.Clients.All.SendAsync("currentStep", new
+            {
+                currentStep,
+                currentStepInfo=steps[currentStep].stepType+steps[currentStep].stepName
+                
+            });
+
+            await _hubContext.Clients.All.SendAsync("errorList", new
+            {
+                errorList=_errorInfos
+            });
+            
+            
+            currentStep++;
+            if (currentStep > steps.Count-1)
+            {
+                currentStep = 1;
+            }
+            
+         
+
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+        }
     }
 }

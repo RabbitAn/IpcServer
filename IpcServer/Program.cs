@@ -17,13 +17,15 @@ builder.Services.AddOpenApi();
 // 添加 CORS 服务
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5173") // 你的前端地址
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
+
 builder.Services.AddSingleton<SqlSugarDbContext>(); // 单例 DbContext
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 Console.WriteLine("连接字符串: " + builder.Configuration.GetConnectionString("Default"));
@@ -46,7 +48,8 @@ builder.Services.AddHostedService<HostedService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 //注册websocket服务
-builder.Services.AddSingleton<WebSocketConnectionManager>();
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -64,51 +67,8 @@ app.MapControllers();
 
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
+app.MapHub<WorkHub>("/workHub").RequireCors("AllowFrontend");;
 
-/// <summary>
-/// WebSocket 端点
-/// 客户端连接地址: ws://localhost:5000/ws?token=my-secret
-/// </summary>
-app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connectionManager) =>
-{
-    // 检查是否为 WebSocket 请求
-    if (!context.WebSockets.IsWebSocketRequest)
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        return;
-    }
-
-
-    var token = context.Request.Query["token"];
-    if (string.IsNullOrEmpty(token) || token != "my-secret")
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return;
-    }
-
-    // 接受 WebSocket 连接
-    var socket = await context.WebSockets.AcceptWebSocketAsync();
-    var id = connectionManager.AddSocket(socket);
-
-    var buffer = new byte[1024 * 4];
-    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-    // 循环接收客户端消息
-    while (!result.CloseStatus.HasValue)
-    {
-        var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-        Console.WriteLine($"收到客户端消息: {message}");
-
-        // 回显消息
-      //  await socket.SendAsync(Encoding.UTF8.GetBytes($"Echo: {message}"), WebSocketMessageType.Text, true, CancellationToken.None);
-
-        // 继续接收
-        result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-    }
-
-    // 客户端关闭连接
-    await connectionManager.RemoveSocketAsync(id);
-});
 app.Run();
 

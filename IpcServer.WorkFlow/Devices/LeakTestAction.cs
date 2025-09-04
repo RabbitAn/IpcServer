@@ -26,7 +26,7 @@ public class LeakTestAction : IDeviceAction
         }
         catch (Exception e)
         {
-            _logger.LogInformation($"[气密检测] 工位:出现异常，异常详情：{e.Message}");
+            _logger.LogError($"[气密检测] 工位:出现异常，异常详情：{e.Message}");
             return "NG";
         }
     }
